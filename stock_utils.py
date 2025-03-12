@@ -4,13 +4,14 @@ from tqdm import tqdm
 import os
 import requests
 import time
+import json
 
 
 def generate_cik_ticker_mapping(
     filings_dir='data/edgar/filings',
     json_file='data/company_tickers_exchange.json',
     txt_file='data/ticker.txt',
-    output_file='data/cik_ticker_mapping.csv'
+    output_file='data/consolidated_stock_list.csv'
 ):
     """
     Generates a CIK-to-ticker mapping using JSON and TXT files, with JSON as primary source and TXT as fallback.
@@ -19,7 +20,7 @@ def generate_cik_ticker_mapping(
         filings_dir (str): Directory containing CIK folders (default: 'data/filings').
         json_file (str): Path to company_tickers_exchange.json (default: 'data/company_tickers_exchange.json').
         txt_file (str): Path to ticker.txt (default: 'data/ticker.txt').
-        output_file (str): Path to save the output CSV (default: 'data/cik_ticker_mapping.csv').
+        output_file (str): Path to save the output CSV (default: 'data/consolidated_stock_list.csv').
 
     Returns:
         None: Saves the mapping to the specified output_file.
@@ -39,7 +40,7 @@ def generate_cik_ticker_mapping(
 
     # Step 3: Create DataFrame from JSON with correct column order
     json_df = pd.DataFrame(tickers_list, columns=[
-                           "cik", "ticker", "name", "exchange"])
+                           "cik", "name", "ticker", "exchange"])
     json_df["cik"] = json_df["cik"].apply(
         lambda x: f"{int(x):010d}" if isinstance(x, int) else x.zfill(10))
 

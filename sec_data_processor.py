@@ -5,7 +5,6 @@ import requests
 import time
 
 
-
 def download_sec_master_files(start_year, end_year, project_folder='data/edgar'):
     """
     Downloads SEC EDGAR master.idx files and creates folder structure for specified years and quarters.
@@ -87,18 +86,23 @@ def download_sec_master_files(start_year, end_year, project_folder='data/edgar')
     print(f"\nDownload complete. Files stored in {project_folder}")
 
 
-
-def generate_and_download_filings(idx_dir='data/edgar', download_dir='data/edgar/filings', 
-                                 output_file='data/filings_list.csv', base_url="https://www.sec.gov/Archives/"):
+def generate_and_download_filings(
+    idx_dir='data/edgar',
+    download_dir='data/edgar/filings',
+    output_file='data/filings_list.csv',
+    base_url="https://www.sec.gov/Archives/",
+    log_file=None  # Optional log file for detailed output
+):
     """
-    Generates a new filings_list.csv from master.idx files and downloads missing 10-K filings.
+    Generates a new filings_list.csv from master.idx files and downloads missing 10-K filings with reduced console output.
     Example usage: generate_and_download_filings()
     Args:
         idx_dir (str): Directory containing master.idx files (default: 'data/edgar').
         download_dir (str): Directory to save downloaded filings (default: 'data/edgar/filings').
         output_file (str): Path to save the filings_list.csv (default: 'data/filings_list.csv').
         base_url (str): Base URL for SEC EDGAR filings (default: 'https://www.sec.gov/Archives/').
-    
+        log_file (str, optional): Path to a log file for detailed output (default: None).
+
     Returns:
         None: Creates filings_list.csv and downloads missing filings.
     """
@@ -109,10 +113,8 @@ def generate_and_download_filings(idx_dir='data/edgar', download_dir='data/edgar
     filings_list = []
     years = range(1994, 2026)
     quarters = ["QTR1", "QTR2", "QTR3", "QTR4"]
-
-    # Calculate total tasks for progress bar (parsing phase)
-    total_idx_files = sum(1 for year in years for qtr in quarters 
-                         if os.path.exists(f"{idx_dir}/{year}/{qtr}/master.idx"))
+    total_idx_files = sum(1 for year in years for qtr in quarters
+                          if os.path.exists(f"{idx_dir}/{year}/{qtr}/master.idx"))
 
     with tqdm(total=total_idx_files, desc="Parsing master.idx files") as pbar:
         for year in years:
@@ -133,45 +135,63 @@ def generate_and_download_filings(idx_dir='data/edgar', download_dir='data/edgar
                             })
                     pbar.update(1)
                     pbar.set_description(f"Parsing {year}/{qtr}")
-                # No else clause: silently skip missing idx files
 
-    # Create a new DataFrame and save to CSV
     filings_df = pd.DataFrame(filings_list)
     filings_df.to_csv(output_file, index=False)
     print(f"Generated new {output_file} with {len(filings_df)} entries.")
 
-    # Step 2: Download missing filings
+    # Step 2: Download missing filings with reduced output
     total_files = len(filings_df)
+    downloaded = 0
+    skipped = 0
+    failed = 0
 
-    with tqdm(filings_df.iterrows(), total=total_files, desc="Downloading Filings") as pbar:
-        for index, row in pbar:
+    with tqdm(total=total_files, desc="Downloading Filings") as pbar:
+        for index, row in filings_df.iterrows():
             cik, form, date, url = row['CIK'], row['Form'], row['Date'], row['URL']
             year = date[:4]
             save_dir = f"{download_dir}/{cik}/{year}"
             os.makedirs(save_dir, exist_ok=True)
             file_path = f"{save_dir}/{form}_{date}.txt"
-            
+
             # Check if file already exists and is not empty
             if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
-                # Log skips sparingly to reduce output
-                if index % 100 == 0:
-                    pbar.write(f"Skipped {file_path} - already exists")
+                skipped += 1
+                if skipped % 1000 == 0:  # Log every 1000 skips
+                    msg = f"Skipped {skipped} files so far (e.g., {file_path})"
+                    pbar.write(msg)
+                    if log_file:
+                        with open(log_file, 'a') as f:
+                            f.write(f"{msg}\n")
                 pbar.update(1)
                 continue
-            
+
             # Download the file
             try:
                 response = requests.get(url, headers=headers)
                 if response.status_code == 200:
                     with open(file_path, 'wb') as f:
                         f.write(response.content)
-                    pbar.set_description(f"Downloaded {form}_{date}")
+                    downloaded += 1
+                    pbar.set_description(
+                        f"Downloaded: {downloaded}, Skipped: {skipped}, Failed: {failed}")
                 else:
-                    pbar.write(f"Failed to download {url} - Status: {response.status_code}")
+                    failed += 1
+                    msg = f"Failed to download {url} - Status: {response.status_code}"
+                    if log_file:
+                        with open(log_file, 'a') as f:
+                            f.write(f"{msg}\n")
             except Exception as e:
-                pbar.write(f"Error downloading {url}: {e}")
-            
+                failed += 1
+                msg = f"Error downloading {url}: {e}"
+                if log_file:
+                    with open(log_file, 'a') as f:
+                        f.write(f"{msg}\n")
+
             time.sleep(0.1)  # Respect SEC rate limit (10 requests/second)
             pbar.update(1)
 
-    print(f"\nDownload complete. Files stored in {download_dir}")   
+    print(
+        f"\nDownload complete. Summary: Downloaded: {downloaded}, Skipped: {skipped}, Failed: {failed}")
+    if log_file:
+        print(f"Detailed logs written to {log_file}")
