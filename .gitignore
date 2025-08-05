@@ -1,5 +1,61 @@
-__pycache__
-download_fillings.ipynb
-/filings/
-/data/edgar/
-/data/daily_stock_prices
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environment
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Data files
+data/edgar/
+data/daily_stock_prices/
+data/llm_cache/
+*.csv
+*.json
+*.xlsx
+*.txt
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter Notebooks
+*.ipynb
+.ipynb_checkpoints/
+
+# Temp files
+*.tmp
+*.temp
+metrics_temp.*
+processed_files_temp.*

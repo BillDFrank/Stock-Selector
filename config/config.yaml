@@ -1,0 +1,59 @@
+# Stock Selector Configuration
+
+# Database settings
+database:
+  host: localhost
+  port: 5432
+  name: StockSelector
+  user: postgres
+  password: postgres
+
+# SEC EDGAR settings
+sec_edgar:
+  base_url: https://www.sec.gov/Archives/
+  user_agent: StockSelector bot@example.com
+  start_year: 2010
+  end_year: 2025
+  rate_limit_delay: 0.1  # seconds between requests
+
+# LLM settings
+llm:
+  provider: openai
+  model: gpt-3.5-turbo
+  api_key: your-api-key-here
+  cache_responses: true
+  cache_dir: data/llm_cache
+
+# Data storage settings
+storage:
+  filings_dir: data/edgar/filings
+  processed_data_dir: data/processed
+  archive_dir: data/archive
+  compress_after_days: 30
+  archive_after_days: 90
+
+# Stock screening criteria
+screening:
+  stocks:
+    min_years_profitable: 14
+    min_eps_cagr_5y: 0.10
+    max_debt_ebitda_ratio: 5.0
+    min_roe: 0.10
+    min_roic: 0.04
+    min_net_margin: 0.07
+    min_ebit_margin: 0.07
+    min_years_since_ipo: 14
+    min_sharpe_ratio: 0.5
+  reits:
+    min_years_profitable: 10
+    min_eps_cagr_5y: 0.04
+    max_debt_ebitda_ratio: 6.5
+    min_roe: 0.05
+    min_net_margin: 0.10
+    min_ebit_margin: 0.10
+    min_years_since_ipo: 10
+
+# Performance analysis settings
+performance:
+  benchmark_ticker: ^GSPC
+  time_frames: [1, 3, 5, 10, 15, 20]  # years
